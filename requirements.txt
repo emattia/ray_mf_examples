@@ -1,0 +1,10 @@
+metaflow
+ray[air]
+xgboost
+xgboost-ray
+matplotlib
+pyarrow
+torch
+torchvision
+pytorch_lightning
+av
