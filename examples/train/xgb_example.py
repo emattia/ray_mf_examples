@@ -45,7 +45,7 @@ def fit_model(
     from ray.train.xgboost import XGBoostTrainer
     from ray.air.config import ScalingConfig
     from ray.air import RunConfig
-
+    
     if run_config_storage_path is not None:
         run_config = RunConfig(storage_path=run_config_storage_path) 
     else:
@@ -57,7 +57,6 @@ def fit_model(
         resources_per_worker={'CPU': n_cpu, 'GPU': n_gpu}, 
         _max_cpu_fraction_per_node = 0.8,
     )
-
     trainer = XGBoostTrainer(
         scaling_config = scaling_config,
         run_config = run_config,
