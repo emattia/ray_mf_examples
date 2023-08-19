@@ -4,25 +4,26 @@ N_NODES = 2
 N_CPU = 8
 MEMORY = 12228
 
-class RayCPU(FlowSpec):
 
+class RayCPU(FlowSpec):
     def _do_ray_job(self):
         import ray
+
         ray.init()
         print("Ray initialized in the %s step." % current.step_name)
         print("Ray nodes: ", ray.nodes())
-        print("Ray cluster resources:" )
-        for k,v in ray.cluster_resources().items():
-            if 'memory' in k.lower():
-                print("%s: %sGB" % (k, round(int(v)/(1024 * 1024 * 1024), 2)))
+        print("Ray cluster resources:")
+        for k, v in ray.cluster_resources().items():
+            if "memory" in k.lower():
+                print("%s: %sGB" % (k, round(int(v) / (1024 * 1024 * 1024), 2)))
             else:
-                print("%s: %s" % (k,v))
+                print("%s: %s" % (k, v))
 
     @step
     def start(self):
         self.next(self.big_step, num_parallel=N_NODES)
 
-    @batch(image='rayproject/ray', cpu=N_CPU, memory=MEMORY)
+    @batch(image="rayproject/ray", cpu=N_CPU, memory=MEMORY)
     @ray_parallel
     @step
     def big_step(self):
@@ -37,5 +38,6 @@ class RayCPU(FlowSpec):
     def end(self):
         pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     RayCPU()

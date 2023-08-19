@@ -346,7 +346,7 @@ def pip(file=None, libraries=None):
                             _libraries[library] = ""
                         else:
                             raise ValueError("Each line in requirements.txt file ")
-            
+
             else:
                 _libraries = libraries
 

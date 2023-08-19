@@ -15,6 +15,7 @@ from ray.air import RunConfig
 
 from functools import partial
 
+
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
@@ -62,30 +63,48 @@ def test(model, data_loader, test_size=256, smoke_test=True):
 
     return correct / total
 
-def download_mnist():
-    subprocess.run(["wget", "www.di.ens.fr/~lelarge/MNIST.tar.gz"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    subprocess.run(["tar", "-zxvf", "MNIST.tar.gz"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-def train_mnist(config, epoch_size, test_size, dataset='mnist', smoke_test=True, n_epochs=10):
+def download_mnist():
+    subprocess.run(
+        ["wget", "www.di.ens.fr/~lelarge/MNIST.tar.gz"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+    subprocess.run(
+        ["tar", "-zxvf", "MNIST.tar.gz"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def train_mnist(
+    config, epoch_size, test_size, dataset="mnist", smoke_test=True, n_epochs=10
+):
 
     # Data Setup
-    if dataset == 'mnist':
+    if dataset == "mnist":
         try:
             download_mnist()
             mnist_transforms = transforms.Compose(
-                [transforms.ToTensor(),
-                transforms.Normalize((0.1307, ), (0.3081, ))])
+                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+            )
             train_loader = DataLoader(
-                datasets.MNIST("./", train=True, download=True, transform=mnist_transforms),
+                datasets.MNIST(
+                    "./", train=True, download=True, transform=mnist_transforms
+                ),
                 batch_size=64,
-                shuffle=True)
+                shuffle=True,
+            )
             test_loader = DataLoader(
-                datasets.MNIST("./", train=False, download=True, transform=mnist_transforms),
+                datasets.MNIST(
+                    "./", train=False, download=True, transform=mnist_transforms
+                ),
                 batch_size=64,
-                shuffle=True)
+                shuffle=True,
+            )
         except (ValueError, RuntimeError, EOFError) as e:
             print("Issue with MNIST dataset path.")
-            session.report({"mean_accuracy": 0.})
+            session.report({"mean_accuracy": 0.0})
             return
     else:
         raise ValueError("Only MNIST dataset is currently supported by this interface.")
@@ -96,8 +115,9 @@ def train_mnist(config, epoch_size, test_size, dataset='mnist', smoke_test=True,
     model.to(device)
 
     optimizer = optim.SGD(
-        model.parameters(), lr=config["lr"], momentum=config["momentum"])
-        
+        model.parameters(), lr=config["lr"], momentum=config["momentum"]
+    )
+
     for i in range(n_epochs):
         train(model, optimizer, train_loader, epoch_size, smoke_test=smoke_test)
         acc = test(model, test_loader, test_size, smoke_test=smoke_test)
@@ -109,27 +129,38 @@ def train_mnist(config, epoch_size, test_size, dataset='mnist', smoke_test=True,
             # This saves the model to the trial directory
             torch.save(model.state_dict(), "./model.pth")
 
+
 def run(
-    dataset = 'mnist',
-    search_space = None, 
-    epoch_size = 512, 
-    test_size = 256, 
-    num_samples = 20, 
-    smoke_test = True,
-    run_config_storage_path = None,
-    n_epochs = 10
+    dataset="mnist",
+    search_space=None,
+    epoch_size=512,
+    test_size=256,
+    num_samples=20,
+    smoke_test=True,
+    run_config_storage_path=None,
+    n_epochs=10,
 ):
     tuner = tune.Tuner(
-        partial(train_mnist, dataset=dataset, test_size=test_size, smoke_test=smoke_test, n_epochs=n_epochs, epoch_size=epoch_size),
-        tune_config = tune.TuneConfig(
+        partial(
+            train_mnist,
+            dataset=dataset,
+            test_size=test_size,
+            smoke_test=smoke_test,
+            n_epochs=n_epochs,
+            epoch_size=epoch_size,
+        ),
+        tune_config=tune.TuneConfig(
             num_samples=num_samples,
             scheduler=ASHAScheduler(metric="mean_accuracy", mode="max"),
         ),
-        param_space = search_space,
-        run_config = None if run_config_storage_path is None else RunConfig(storage_path=run_config_storage_path)
+        param_space=search_space,
+        run_config=None
+        if run_config_storage_path is None
+        else RunConfig(storage_path=run_config_storage_path),
     )
     results = tuner.fit()
     return results
+
 
 def plot(results, ax=None):
     dfs = {result.log_dir: result.metrics_dataframe for result in results}
@@ -140,7 +171,8 @@ def plot(results, ax=None):
             pass
     return dfs
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     search_space = {
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
@@ -148,4 +180,4 @@ if __name__ == '__main__':
         # "scaling_config": ScalingConfig(resources_per_worker={"CPU": 1})
     }
 
-    dfs = plot(run(search_space = search_space, smoke_test = True))
+    dfs = plot(run(search_space=search_space, smoke_test=True))

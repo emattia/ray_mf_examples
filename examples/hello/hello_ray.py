@@ -2,6 +2,7 @@
 
 import ray
 import time
+
 ray.init()
 
 """
@@ -19,6 +20,7 @@ class Counter:
 
     def incr(self, value):
         self.i += value
+
 
 # Create a Counter actor.
 c = Counter.remote()
