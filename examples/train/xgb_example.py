@@ -13,8 +13,7 @@ def load_data(
     s3_uri: str = None,
     table: Table = None,
     split_ratio: float = 0.2,
-    n_cpu: int = 8,
-    subsample=1.0,
+    n_cpu: int = 8
 ):
     if s3_uri is not None and table is not None:
         raise ValueError(
@@ -32,9 +31,7 @@ def load_data(
         raise ValueError(
             "load_data only supports .csv, .parquet, or a directory of objects."
         )
-    train_dataset, valid_dataset = dataset.random_sample(subsample).train_test_split(
-        test_size=split_ratio
-    )
+    train_dataset, valid_dataset = dataset.train_test_split(test_size=split_ratio)
     logging.log(
         logging.INFO,
         f"Loaded {train_dataset.count()} training rows and {valid_dataset.count()} validation rows.",

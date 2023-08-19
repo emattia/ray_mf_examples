@@ -1,22 +1,41 @@
-from metaflow import FlowSpec, step, batch
-from decorators import gpu_profile, pip
+from metaflow import FlowSpec, step, batch, pip_base, current, card, environment
+from decorators import gpu_profile
+from metaflow.metaflow_config import DATATOOLS_S3ROOT
 
 DATA_URL = "s3://outerbounds-datasets/ubiquant/investment_ids"
-RESOURCES = dict(memory=16000, cpu=4, use_tmpfs=True, tmpfs_size=4000)
+RESOURCES = dict(memory=16000, cpu=4, gpu=1, use_tmpfs=True, tmpfs_size=4000)
+DEPS = dict(
+    packages={
+        "ray": "2.6.3",
+        "xgboost": "",
+        "xgboost_ray": "",
+        "s3fs": "",
+        "matplotlib": "",
+        "pyarrow": ""
+    },
+)
 
-
+@pip_base(**DEPS)
 class RayXGBoostGPU(FlowSpec):
 
     n_files = 500
     n_cpu = RESOURCES["cpu"]
+    n_gpu = RESOURCES["gpu"]
     s3_url = DATA_URL
 
     @step
     def start(self):
         self.next(self.train)
 
+    @environment(
+        vars={
+            "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+            "NCCL_SOCKET_IFNAME": "eth0",
+        }
+    )
     @gpu_profile(interval=1)
-    @batch(**RESOURCES, image="eddieob/ray-demo:xgboost-gpu")
+    @batch(**RESOURCES)
+    @card
     @step
     def train(self):
 

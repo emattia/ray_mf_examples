@@ -1,15 +1,25 @@
-from metaflow import FlowSpec, step, ray_parallel, batch, current, environment
+from metaflow import FlowSpec, step, ray_parallel, batch, card, current, environment, pip_base
 from decorators import gpu_profile
 from metaflow.metaflow_config import DATATOOLS_S3ROOT
 
 NUM_NODES = 2
 DATA_URL = "s3://outerbounds-datasets/ubiquant/investment_ids"
-RESOURCES = dict(gpu=1, memory=16000, cpu=4, use_tmpfs=True, tmpfs_size=4000)
+RESOURCES = dict(cpu=4, gpu=1, memory=32000, use_tmpfs=True, tmpfs_size=8000)
+DEPS = dict(
+    packages={
+        "ray": "2.6.3",
+        "xgboost": "",
+        "xgboost_ray": "",
+        "s3fs": "",
+        "matplotlib": "",
+        "pyarrow": ""
+    },
+)
 
-
+@pip_base(**DEPS)
 class RayXGBoostMultinodeGPU(FlowSpec):
 
-    n_files = 500
+    n_files = 1500
     n_cpu = RESOURCES["cpu"]
     n_gpu = RESOURCES["gpu"]
     s3_url = DATA_URL
@@ -28,7 +38,8 @@ class RayXGBoostMultinodeGPU(FlowSpec):
     )
     @ray_parallel
     @gpu_profile(interval=1)
-    @batch(**RESOURCES, image="eddieob/ray-demo:xgboost-gpu")
+    @batch(**RESOURCES)
+    @card
     @step
     def train(self):
 

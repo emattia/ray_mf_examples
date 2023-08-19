@@ -1,11 +1,21 @@
-from metaflow import FlowSpec, step, ray_parallel, batch, current
+from metaflow import FlowSpec, step, ray_parallel, batch, current, pip_base
 from metaflow.metaflow_config import DATATOOLS_S3ROOT
 
 NUM_NODES = 2
 DATA_URL = "s3://outerbounds-datasets/ubiquant/investment_ids"
 RESOURCES = dict(memory=16000, cpu=8, use_tmpfs=True, tmpfs_size=4000)
+DEPS = dict(
+    packages={
+        "ray": "2.6.3",
+        "xgboost": "",
+        "xgboost_ray": "",
+        "s3fs": "",
+        "matplotlib": "",
+        "pyarrow": ""
+    },
+)
 
-
+@pip_base(**DEPS)
 class RayXGBoostMultinodeCPU(FlowSpec):
 
     n_files = 500
@@ -17,7 +27,7 @@ class RayXGBoostMultinodeCPU(FlowSpec):
         self.next(self.train, num_parallel=NUM_NODES)
 
     @ray_parallel
-    @batch(image="eddieob/ray-demo:xgboost-cpu", **RESOURCES)
+    @batch(**RESOURCES)
     @step
     def train(self):
 
