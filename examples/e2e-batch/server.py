@@ -9,8 +9,9 @@ from typing import List, Dict
 app = FastAPI()
 
 def select_from_checkpoint_registry(flow_name = "Train"):
-    flow = Flow(flow_name)
-    run = flow.latest_successful_run
+    from metaflow import Flow
+    run = list(Flow(flow_name).runs('production_ready'))[0]
+    print("Using checkpoint from Run('{}')".format(run.pathspec))
     result = run.data.result
     return result.checkpoint
 
@@ -34,8 +35,8 @@ class BatchPredictionService:
         id_to_preds_payload = dict(zip(id_to_batch_features.keys(), preds))
         return id_to_preds_payload
 
-    @app.post("/swap/")
-    def swap(self):
+    @app.post("/swap-model/")
+    def swap_model(self):
         return "TODO"
 
 batch_preds = BatchPredictionService.bind()

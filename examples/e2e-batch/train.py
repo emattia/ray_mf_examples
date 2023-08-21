@@ -1,4 +1,4 @@
-from metaflow import FlowSpec, step
+from metaflow import FlowSpec, step, current
 from base import TabularBatchPrediction
 
 class Train(FlowSpec, TabularBatchPrediction):

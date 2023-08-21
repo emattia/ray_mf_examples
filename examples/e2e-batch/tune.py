@@ -31,7 +31,7 @@ class Tune(FlowSpec, TabularBatchPrediction):
         # https://docs.ray.io/en/latest/tune/api/doc/ray.tune.Tuner.html#ray.tune.Tuner
         param_space = {
             "scaling_config": ScalingConfig(
-                num_workers=4,
+                num_workers=1,
                 _max_cpu_fraction_per_node=0.8,
             ),
             "params": {
@@ -69,8 +69,8 @@ class Tune(FlowSpec, TabularBatchPrediction):
             tune_config = tune_config,
         )
         tuner = self.load_tuner(tune_args)
-        self.results = tuner.fit()
-        self.result = self.results.get_best_result()
+        results = tuner.fit()
+        self.result = results.get_best_result()
         self.next(self.end)
 
     @step

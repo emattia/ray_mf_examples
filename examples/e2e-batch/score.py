@@ -1,6 +1,7 @@
-from metaflow import FlowSpec, step, trigger_on_finish, current, Parameter
+from metaflow import FlowSpec, step, trigger_on_finish, current, Parameter, Flow, Run
 from base import TabularBatchPrediction
 
+PRODUCTION_THRESHOLD = 0.95
 PARENT_FLOW_1 = "Train"
 PARENT_FLOW_2 = "Tune"
 TRIGGERS = [PARENT_FLOW_1, PARENT_FLOW_2]
@@ -17,33 +18,23 @@ class Score(FlowSpec, TabularBatchPrediction):
 
     @step
     def start(self):
+
         import pandas as pd
 
-        try:
-            upstream_flow = current.trigger.run.parent.pathspec
-            assert upstream_flow in TRIGGERS
-        except AssertionError:
-            print(
-                "Score flow can only be triggered by Train or Tune flow. Please check your flow of flows."
-            )
-            exit(1)
-        except AttributeError:
-            upstream_flow = self.upstream_flow
-            print(
-                f"Current run was not triggered. Defaulting to {upstream_flow}."
-            )
-
         self.setup()
+        try:
+            upstream_run = current.trigger.run
+        except AttributeError:
+            print("Current run was not triggered.")
+            upstream_run = Flow(self.upstream_flow).latest_successful_run
+        self.upstream_run_pathspec = upstream_run.pathspec
+
         true_targets, test_dataset = self._fetch_eval_set()
         preds = self.batch_predict(
             dataset=test_dataset,
-            checkpoint=self.load_checkpoint(flow_name=upstream_flow)
+            checkpoint=self.load_checkpoint(run=upstream_run)
         ).to_pandas()
         self.score_results = pd.concat([true_targets, preds], axis=1)
-        self.next(self.end)
-
-    @step
-    def end(self):
         for threshold in [0.25, 0.5, 0.75]:
             self.score_results[f"pred @ {threshold}"] = self.score_results[
                 "predictions"
@@ -62,13 +53,36 @@ class Score(FlowSpec, TabularBatchPrediction):
                     ),
                 )
             )
-        print(f"""
+        self.next(self.end)
 
+    @step
+    def end(self):
+
+        run = Run(self.upstream_run_pathspec)
+        df = self.score_results
+        accuracy = ((df["predictions"] > 0.5).values == df["target"].values).sum() / len(df)
+        if accuracy > PRODUCTION_THRESHOLD: 
+            run = Run(self.upstream_run_pathspec)
+            run.add_tag('production_ready')
+
+        print(f"""
             Access result:
 
-            from metaflow import Run
-            run = Run('{current.flow_name}/{current.run_id}')
-            df = run.data.score_results
+                from metaflow import Run
+                run = Run('{current.flow_name}/{current.run_id}')
+                df = run.data.score_results
+
+            Access upstream run:
+
+                from metaflow import Run
+                run = Run('{self.upstream_run_pathspec}')
+                df = run.data.result
+
+            Fetch latest production ready runs based on tags from this step:
+                
+                from metaflow import Flow
+                training_run = list(Flow('Train').runs('production_ready'))
+                tuning_run = list(Flow('Tune').runs('production_ready'))
         """)
 
 
