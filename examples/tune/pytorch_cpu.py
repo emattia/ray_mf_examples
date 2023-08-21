@@ -1,6 +1,5 @@
 from metaflow import FlowSpec, step, batch, Parameter, S3, current, card, conda, pip
 from metaflow.cards import Image
-from metaflow.metaflow_config import DATATOOLS_S3ROOT
 
 RESOURCES = dict(memory=12228, cpu=4)
 CONDA_DEP = dict(
@@ -43,10 +42,6 @@ class RayTorchCPU(FlowSpec):
                 resources_per_worker={"CPU": self.n_cpu}, _max_cpu_fraction_per_node=0.8
             ),
         }
-
-        self.checkpoint_path = os.path.join(
-            DATATOOLS_S3ROOT, current.flow_name, current.run_id, "ray_checkpoints"
-        )
         results_list = run(search_space=search_space, smoke_test=True)
 
         fig, ax = plt.subplots(1, 1)

@@ -49,9 +49,12 @@ class RayTorchGPU(FlowSpec):
             ),
         }
 
-        self.checkpoint_path = os.path.join(
-            DATATOOLS_S3ROOT, current.flow_name, current.run_id, "ray_checkpoints"
-        )
+        if os.environ.get("METAFLOW_RUNTIME_ENVIRONMENT", "local") == "local":
+            self.checkpoint_path = os.path.join(os.getcwd(), "ray_checkpoints")
+        else:
+            self.checkpoint_path = os.path.join(
+                DATATOOLS_S3ROOT, current.flow_name, current.run_id, "ray_checkpoints"
+            )
         results_list = run(
             search_space=search_space,
             smoke_test=True,
