@@ -10,6 +10,7 @@ from ray.train.batch_predictor import BatchPredictor
 from metaflow import Run, Flow
 from metaflow.metaflow_config import DATATOOLS_S3ROOT
 
+
 class LearningTask:
     def __init__(
         self,
@@ -89,7 +90,6 @@ class LearningTask:
 
 
 class TabularBatchPrediction(LearningTask):
-
     def __init__(self, kwargs: dict = {}):
         self.setup(**kwargs)
 
@@ -159,7 +159,7 @@ class TabularBatchPrediction(LearningTask):
         train_dataset, valid_dataset, _ = self.load_dataset()
         preprocessor = self.load_preprocesser()
         _trainer_args = dict(
-            run_config = RunConfig(),
+            run_config=RunConfig(),
             scaling_config=ScalingConfig(
                 num_workers=self.n_nodes,
                 use_gpu=self.n_gpu > 0,
@@ -231,8 +231,9 @@ class TabularBatchPrediction(LearningTask):
         batch_predictor = BatchPredictor.from_checkpoint(checkpoint, XGBoostPredictor)
         return batch_predictor.predict(dataset)
 
-    def choose_best_checkpoint(self, run: Run = None, flow_name: str = "Train") -> XGBoostCheckpoint:
-
+    def choose_best_checkpoint(
+        self, run: Run = None, flow_name: str = "Train"
+    ) -> XGBoostCheckpoint:
         def _search_for_checkpt(run):
             if run.data.result is None:
                 return None
@@ -252,4 +253,3 @@ class TabularBatchPrediction(LearningTask):
                 return chkpt
 
         raise ValueError("No checkpoint found in {}/{}".format(flow_name, run_id))
-            

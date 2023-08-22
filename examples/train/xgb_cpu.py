@@ -10,9 +10,10 @@ DEPS = dict(
         "xgboost_ray": "",
         "s3fs": "",
         "matplotlib": "",
-        "pyarrow": ""
+        "pyarrow": "",
     },
 )
+
 
 @pip_base(**DEPS)
 class RayXGBoostCPU(FlowSpec):
@@ -40,9 +41,6 @@ class RayXGBoostCPU(FlowSpec):
         table = load_table(self.s3_url, self.n_files, drop_cols=["row_id"])
         train_dataset, valid_dataset = load_data(table=table)
 
-        self.checkpoint_path = os.path.join(
-            DATATOOLS_S3ROOT, current.flow_name, current.run_id, "ray_checkpoints"
-        )
         self.result = fit_model(
             train_dataset,
             valid_dataset,

@@ -6,10 +6,13 @@ PARENT_FLOW_1 = "Train"
 PARENT_FLOW_2 = "Tune"
 TRIGGERS = [PARENT_FLOW_1, PARENT_FLOW_2]
 
+
 @trigger_on_finish(flows=TRIGGERS)
 class Score(FlowSpec, TabularBatchPrediction):
 
-    upstream_flow = Parameter("upstream", help="Upstream flow name", default=TRIGGERS[0], type=str)
+    upstream_flow = Parameter(
+        "upstream", help="Upstream flow name", default=TRIGGERS[0], type=str
+    )
 
     def _fetch_eval_set(self):
         _, valid_dataset, test_dataset = self.load_dataset()
@@ -31,8 +34,7 @@ class Score(FlowSpec, TabularBatchPrediction):
 
         true_targets, test_dataset = self._fetch_eval_set()
         preds = self.batch_predict(
-            dataset=test_dataset,
-            checkpoint=self.load_checkpoint(run=upstream_run)
+            dataset=test_dataset, checkpoint=self.load_checkpoint(run=upstream_run)
         ).to_pandas()
         self.score_results = pd.concat([true_targets, preds], axis=1)
         for threshold in [0.25, 0.5, 0.75]:
@@ -60,12 +62,15 @@ class Score(FlowSpec, TabularBatchPrediction):
 
         run = Run(self.upstream_run_pathspec)
         df = self.score_results
-        accuracy = ((df["predictions"] > 0.5).values == df["target"].values).sum() / len(df)
-        if accuracy > PRODUCTION_THRESHOLD: 
+        accuracy = (
+            (df["predictions"] > 0.5).values == df["target"].values
+        ).sum() / len(df)
+        if accuracy > PRODUCTION_THRESHOLD:
             run = Run(self.upstream_run_pathspec)
-            run.add_tag('production_ready')
+            run.add_tag("production_ready")
 
-        print(f"""
+        print(
+            f"""
             Access result:
 
                 from metaflow import Run
@@ -83,7 +88,8 @@ class Score(FlowSpec, TabularBatchPrediction):
                 from metaflow import Flow
                 training_run = list(Flow('Train').runs('production_ready'))
                 tuning_run = list(Flow('Tune').runs('production_ready'))
-        """)
+        """
+        )
 
 
 if __name__ == "__main__":

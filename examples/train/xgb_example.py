@@ -10,10 +10,7 @@ from pyarrow import Table
 
 
 def load_data(
-    s3_uri: str = None,
-    table: Table = None,
-    split_ratio: float = 0.2,
-    n_cpu: int = 8
+    s3_uri: str = None, table: Table = None, split_ratio: float = 0.2, n_cpu: int = 8
 ):
     if s3_uri is not None and table is not None:
         raise ValueError(

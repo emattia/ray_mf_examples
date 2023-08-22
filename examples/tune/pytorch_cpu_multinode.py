@@ -10,7 +10,7 @@ CONDA_DEP = dict(
 )
 
 
-class RayTorchCPUMultinode(FlowSpec):
+class RayTorchMultinodeCPU(FlowSpec):
 
     epoch_size = 1024
     test_size = 256
@@ -50,12 +50,6 @@ class RayTorchCPUMultinode(FlowSpec):
             ),
         }
 
-        if os.environ.get("METAFLOW_RUNTIME_ENVIRONMENT", "local") == "local":
-            self.checkpoint_path = os.path.join(os.getcwd(), "ray_checkpoints")
-        else:
-            self.checkpoint_path = os.path.join(
-                DATATOOLS_S3ROOT, current.flow_name, current.run_id, "ray_checkpoints"
-            )
         results_list = run(
             search_space=search_space,
             smoke_test=True,
@@ -79,4 +73,4 @@ class RayTorchCPUMultinode(FlowSpec):
 
 
 if __name__ == "__main__":
-    RayTorchCPUMultinode()
+    RayTorchMultinodeCPU()
