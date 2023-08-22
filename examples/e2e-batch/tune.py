@@ -54,19 +54,19 @@ class Tune(FlowSpec, TabularBatchPrediction):
 
         # https://docs.ray.io/en/latest/tune/api/doc/ray.tune.TuneConfig.html
         tune_config = tune.TuneConfig(
-            metric = self.optimization_metric,
-            mode = self.optimization_direction,
-            search_alg = tune.search.basic_variant.BasicVariantGenerator(),
-            scheduler = tune.schedulers.ASHAScheduler(),
-            num_samples = self.num_samples,
-            time_budget_s = self.max_timeout,
-            max_concurrent_trials = self.n_nodes,
+            metric=self.optimization_metric,
+            mode=self.optimization_direction,
+            search_alg=tune.search.basic_variant.BasicVariantGenerator(),
+            scheduler=tune.schedulers.ASHAScheduler(),
+            num_samples=self.num_samples,
+            time_budget_s=self.max_timeout,
+            max_concurrent_trials=self.n_nodes,
         )
         tune_args = dict(
-            trainable = self.load_trainer(),
-            param_space = param_space,
-            run_config = run_config,
-            tune_config = tune_config,
+            trainable=self.load_trainer(),
+            param_space=param_space,
+            run_config=run_config,
+            tune_config=tune_config,
         )
         tuner = self.load_tuner(tune_args)
         results = tuner.fit()
@@ -75,7 +75,8 @@ class Tune(FlowSpec, TabularBatchPrediction):
 
     @step
     def end(self):
-        print(f"""
+        print(
+            f"""
 
             Access result:
 
@@ -83,7 +84,9 @@ class Tune(FlowSpec, TabularBatchPrediction):
             run = Run('{current.flow_name}/{current.run_id}')
             df = run.data.results
             best_result = run.data.result
-        """)
+        """
+        )
+
 
 if __name__ == "__main__":
     Tune()

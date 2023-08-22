@@ -1,8 +1,8 @@
 from metaflow import FlowSpec, step, current
 from base import TabularBatchPrediction
 
-class Train(FlowSpec, TabularBatchPrediction):
 
+class Train(FlowSpec, TabularBatchPrediction):
     @step
     def start(self):
         self.setup()
@@ -11,14 +11,17 @@ class Train(FlowSpec, TabularBatchPrediction):
 
     @step
     def end(self):
-        print(f"""
+        print(
+            f"""
 
             Access result:
 
             from metaflow import Run
             run = Run('{current.flow_name}/{current.run_id}')
             result = run.data.result
-        """)
+        """
+        )
+
 
 if __name__ == "__main__":
     Train()
