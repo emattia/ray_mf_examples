@@ -6,6 +6,7 @@ from ray.train.xgboost import XGBoostPredictor
 from ray.train.batch_predictor import BatchPredictor
 from typing import List, Dict
 
+
 app = FastAPI()
 
 

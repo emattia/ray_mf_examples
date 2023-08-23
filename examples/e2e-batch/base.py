@@ -133,6 +133,8 @@ class TabularBatchPrediction(LearningTask):
             n_nodes,
         )
 
+        self.hpo_num_samples = 5
+
     def load_dataset(
         self, path: str = None, test_size: float = 0.3
     ) -> List[ray.data.Dataset]:
@@ -153,6 +155,7 @@ class TabularBatchPrediction(LearningTask):
     ) -> ray.train.xgboost.XGBoostCheckpoint:
         if run is None:
             run = Flow(flow_name).latest_successful_run
+        print("Loading Ray checkpoint from {}/{}".format(flow_name, run.id))
         return run.data.result.checkpoint
 
     def load_trainer(self, trainer_args: dict = {}) -> ray.train.xgboost.XGBoostTrainer:
@@ -186,8 +189,8 @@ class TabularBatchPrediction(LearningTask):
         # https://docs.ray.io/en/latest/tune/api/doc/ray.tune.Tuner.html#ray.tune.Tuner
         param_space = {
             "scaling_config": ScalingConfig(
-                num_workers=tune.grid_search([2, 4]),
-                resources_per_worker={"CPU": tune.grid_search([1, 2])},
+                num_workers=1,
+                # resources_per_worker={"CPU": 1},
                 _max_cpu_fraction_per_node=0.8,
             ),
             "params": {
@@ -202,13 +205,17 @@ class TabularBatchPrediction(LearningTask):
 
         run_config = RunConfig(verbose=0)
 
+        _num_samples = self.num_samples if hasattr(self, 'num_samples') else self.hpo_num_samples
+        print(f"Using {_num_samples} samples for HPO.")
         # https://docs.ray.io/en/latest/tune/api/doc/ray.tune.TuneConfig.html
         tune_config = tune.TuneConfig(
+            metric="valid-logloss", 
+            mode="min",
             search_alg=tune.search.basic_variant.BasicVariantGenerator(),
-            scheduler=tune.schedulers.ASHAScheduler(metric="logloss", mode="min"),
-            num_samples=self.num_samples,
-            time_budget_s=self.max_timeout,
-            max_concurrent_trials=self.n_nodes,
+            scheduler=tune.schedulers.ASHAScheduler(),
+            num_samples = _num_samples,
+            time_budget_s = self.max_timeout,
+            max_concurrent_trials = self.n_nodes,
         )
 
         _tuner_args = dict(
@@ -217,6 +224,7 @@ class TabularBatchPrediction(LearningTask):
             run_config=run_config,
             tune_config=tune_config,
         )
+
         _tuner_args.update(tuner_args)
         return ray.tune.Tuner(**_tuner_args)
 

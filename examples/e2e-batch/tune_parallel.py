@@ -1,7 +1,9 @@
-from metaflow import FlowSpec, step, Parameter, current
+from metaflow import FlowSpec, step, Parameter, current, batch, pip_base, ray_parallel
 from base import TabularBatchPrediction
 
+N_NODES = 8
 
+@pip_base(packages={"ray[air]": "", "pandas": "", "xgboost": "", "xgboost-ray": "", "pyarrow": ""})
 class Tune(FlowSpec, TabularBatchPrediction):
 
     num_samples = Parameter(
@@ -18,6 +20,12 @@ class Tune(FlowSpec, TabularBatchPrediction):
 
     @step
     def start(self):
+        self.next(self.tune, num_parallel=N_NODES)
+
+    @batch
+    @ray_parallel
+    @step
+    def tune(self):
 
         from metaflow.metaflow_config import DATATOOLS_S3ROOT
         from metaflow import current
@@ -26,7 +34,7 @@ class Tune(FlowSpec, TabularBatchPrediction):
         from ray import tune
         import os
 
-        self.setup()
+        self.setup(n_nodes=N_NODES)
 
         # https://docs.ray.io/en/latest/tune/api/doc/ray.tune.Tuner.html#ray.tune.Tuner
         param_space = {
@@ -44,12 +52,7 @@ class Tune(FlowSpec, TabularBatchPrediction):
             },
         }
 
-        if os.environ.get("METAFLOW_RUNTIME_ENVIRONMENT", "local") == "local":
-            self.checkpoint_path = os.path.join(os.getcwd(), "ray_checkpoints")
-        else:
-            self.checkpoint_path = os.path.join(
-                DATATOOLS_S3ROOT, current.flow_name, current.run_id, "ray_checkpoints"
-            )
+        # self.checkpoint_path is automatically set by the @ray_parallel decorator
         run_config = RunConfig(storage_path=self.checkpoint_path)
 
         # https://docs.ray.io/en/latest/tune/api/doc/ray.tune.TuneConfig.html
@@ -70,7 +73,13 @@ class Tune(FlowSpec, TabularBatchPrediction):
         )
         tuner = self.load_tuner(tune_args)
         results = tuner.fit()
+        self.results = results.get_dataframe()
         self.result = results.get_best_result()
+        self.next(self.join)
+
+    @step
+    def join(self, inputs):
+        self.merge_artifacts(inputs)
         self.next(self.end)
 
     @step

@@ -86,8 +86,8 @@ class Score(FlowSpec, TabularBatchPrediction):
             Fetch latest production ready runs based on tags from this step:
                 
                 from metaflow import Flow
-                training_run = list(Flow('Train').runs('production_ready'))
-                tuning_run = list(Flow('Tune').runs('production_ready'))
+                training_run = list(Flow('Train').runs('production_ready'))[0]
+                tuning_run = list(Flow('Tune').runs('production_ready'))[0]
         """
         )
 
